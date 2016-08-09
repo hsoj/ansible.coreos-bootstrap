@@ -1,0 +1,19 @@
+#cloud-config
+hostname: {{ inventory_hostname }}
+coreos:
+    etcd:
+        name: {{ inventory_hostname }}
+        discovery: {{ coreos_etcd_discovery_url }}
+    update:
+        reboot-strategy: best-effort
+        group: {{ coreos_channel }}
+    units:
+        name: etcd.service
+        command: start
+write_files:
+    - path: {{ coreos_exec_path }}/bin/python
+      permissions: 0755
+      content: |
+        #!/bin/bash
+        export LD_LIBRARY_PATH={{ coreos_exec_path }}/lib:$LD_LIBRARY_PATH
+        {{ coreos_exec_path }}/bin/pypy "$@"

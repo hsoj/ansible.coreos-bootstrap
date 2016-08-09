@@ -1,2 +1,63 @@
 ---
-# tasks file for hsoj.coreos-bootstrap
+- name: Check if the exec path needs to be created.
+  ignore_errors: True
+  raw: if [ ! -d {{ coreos_exec_path }} ]; then /bin/false; else /bin/true; fi
+  register: exec_path_status
+
+- name: Create the exec path.
+  become: yes
+  when: exec_path_status | failed
+  raw: mkdir -p {{ coreos_exec_path }}
+
+- name: Create required directories within the exec path.
+  become: yes
+  when: exec_path_status | failed
+  raw: mkdir -p {{ coreos_exec_path }}/{{ item }}
+  with_items:
+    - "lib"
+    - "tmp"
+
+- name: Check if pypy needs to be installed.
+  ignore_errors: True
+  raw: if [ ! -f {{ coreos_exec_path }}/bin/pypy ]; then /bin/false; else /bin/true; fi
+  register: pypy_status
+
+- name: Download pypy.
+  when: pypy_status | failed
+  raw: cd {{ coreos_exec_path }}/tmp && wget -O - {{ coreos_pypy_url }} | tar -xjf -
+
+- name: Relocate the pypy files into the exec path.
+  become: yes
+  when: pypy_status | failed
+  raw: cp -Rp {{ coreos_exec_path }}/tmp/{{ coreos_pypy_file_name }}/* {{ coreos_exec_path }}/
+
+- name: Check if the ncurses library needs to be linked.
+  raw: if [ ! -d {{ coreos_exec_path }}/lib/libtinfo.so.5 ]; then /bin/false; else /bin/true; fi
+  register: ncurses_status
+
+- name: Symlink the ncurses library.
+  become: yes
+  when: ncurses_status | failed
+  raw: ln -snf /lib64/libncurses.so.5.9 {{ coreos_exec_path }}/lib/libtinfo.so.5
+
+- name: Create the cloud init configuration file.
+  delegate_to: localhost
+  template: src="cloud-init.j2"
+            dest="{{ playbook_dir }}/cloud-config"
+
+- name: Copy the cloud init configuration file onto the instance.
+  delegate_to: localhost
+  command: >
+    scp -i {{ ansible_ssh_private_key_file }} -P {{ ansible_ssh_port }}
+    {{ playbook_dir }}/cloud-config
+    {{ ansible_ssh_user }}@{{ ansible_ssh_host }}:{{ coreos_exec_path }}/tmp/cloud-config
+
+- name: Execute the cloud init configuration.
+  become: yes
+  raw: coreos-cloudinit -from-file {{ coreos_exec_path }}/tmp/cloud-config
+
+- set_fact:
+    ansible_python_interpreter: "{{ coreos_exec_path }}/bin/python"
+
+- name: Gather facts.
+  setup:
