@@ -4,5 +4,5 @@
   roles:
     - {
       role: ../../coreos-bootstrap,
-      coreos_exec_path: "./"
+      coreos_exec_path: "./opt"
     }
