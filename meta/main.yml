@@ -6,4 +6,8 @@ galaxy_info:
   galaxy_tags:
     - coreos
     - bootstrap
+  platforms:
+    - name: CoreOS
+      versions:
+        - all
 dependencies: []
