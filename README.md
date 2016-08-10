@@ -1,7 +1,10 @@
-Role Name
+hsoj.coreos-bootstrap
 =========
 
 Role to prepare a CoreOS instance for execution of ansible tasks.
+
+[![Build Status](https://travis-ci.org/hsoj/coreos-bootstrap.svg?branch=master)](https://travis-ci.org/hsoj/coreos-bootstrap)
+
 
 Requirements
 ------------
