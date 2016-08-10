@@ -26,19 +26,18 @@ coreos_etcd_discovery_url: ""
 Example Playbook
 ----------------
 
-- hosts: local
-  roles:
-    - { role: local-tasks }
-
-- hosts: coreos
-  gather_facts: false
-  roles:
-    - { role: hsoj.coreos-bootstrap, coreos_channel: "alpha" }
-
-- hosts: webserver
-  roles:
-    - { role: some.role }
-
+    - hosts: local
+      roles:
+         - { role: username.rolename, x: 42 }
+         
+    - hosts: coreos
+      gather_facts: false
+      roles:
+        - { role: hsoj.coreos-bootstrap, coreos_channel: "stable" }
+    
+    - hosts: servers
+      roles:
+        - { role: username.role-name }
 
 License
 -------
