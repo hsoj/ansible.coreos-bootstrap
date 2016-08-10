@@ -2,4 +2,7 @@
 - hosts: localhost
   connection: local
   roles:
-    - { role: ../../coreos-bootstrap }
+    - {
+      role: ../../coreos-bootstrap,
+      coreos_exec_path: "./"
+    }
