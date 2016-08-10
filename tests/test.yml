@@ -1,5 +1,5 @@
 ---
 - hosts: localhost
-  remote_user: root
+  connection: local
   roles:
-    - hsoj.coreos-bootstrap
+    - { role: ../../hsoj.coreos-bootstrap }
