@@ -17,6 +17,11 @@
     - "lib"
     - "tmp"
 
+- name: Change ownership of the exec path for the connected user.
+  become: yes
+  when: exec_path_status | failed
+  raw: chown -R {{ ansible_ssh_user }} {{ coreos_exec_path }}
+
 - name: Check if pypy needs to be installed.
   ignore_errors: True
   raw: if [ ! -f {{ coreos_exec_path }}/bin/pypy ]; then /bin/false; else /bin/true; fi
@@ -32,6 +37,7 @@
   raw: cp -Rp {{ coreos_exec_path }}/tmp/{{ coreos_pypy_file_name }}/* {{ coreos_exec_path }}/
 
 - name: Check if the ncurses library needs to be linked.
+  ignore_errors: True
   raw: if [ ! -d {{ coreos_exec_path }}/lib/libtinfo.so.5 ]; then /bin/false; else /bin/true; fi
   register: ncurses_status
 
