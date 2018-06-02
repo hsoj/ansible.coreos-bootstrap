@@ -7,12 +7,12 @@
 - name: Create the exec path
   become: yes
   when: exec_path_status is failed
-  raw: mkdir -p {{ coreos_exec_path }}
+  raw: mkdir -p "{{ coreos_exec_path }}"
 
 - name: Create required directories within the exec path
   become: yes
-  when: exec_path_status is failed
-  raw: mkdir -p {{ coreos_exec_path }}/{{ item }}
+  when: exec_path_status is failed or coreos_exec_path == "/opt"
+  raw: mkdir -p "{{ coreos_exec_path }}/{{ item }}"
   with_items:
     - "bin"
     - "lib"
@@ -21,7 +21,7 @@
 - name: Change ownership of the exec path for the connected user
   become: yes
   when: exec_path_status is failed
-  raw: chown -R {{ ansible_ssh_user }} {{ coreos_exec_path }}
+  raw: chown -R {{ ansible_ssh_user }} "{{ coreos_exec_path }}/*"
 
 - name: Check if pypy needs to be installed
   ignore_errors: True
@@ -49,34 +49,6 @@
 
 - name: Create the python wrapper
   script: create_python_wrapper.sh
-
-#- set_fact:
-#    python_template: "/tmp/python.{{ inventory_hostname }}"
-#
-#- name: Ensure the python binary template does not already exist
-#  delegate_to: localhost
-#  file:
-#    state: absent
-#    path: "{{ python_template }}"
-#
-#- name: Create the python binary template
-#  delegate_to: localhost
-#  template:
-#    src: "python.j2"
-#    dest: "{{ python_template }}"
-#
-
-
-#- name: Create python binary
-#  raw: |
-#    cat > "{{ coreos_exec_path }}/bin/python" <<EOF
-#    #!/usr/bin/env python
-#    export LD_LIBRARY_PATH="{{ coreos_exec_path }}/lib:$LD_LIBRARY_PATH"
-#    exec "{{ coreos_exec_path }}/bin/pypy" "\$@"
-#    EOF
-#
-#- name: Set executable bit on python binary
-#  raw: chmod 0755 "{{ coreos_exec_path }}/bin/python"
 
 - set_fact:
     ansible_python_interpreter: "{{ coreos_exec_path }}/bin/python"
