@@ -1,66 +1,82 @@
 ---
-- name: Check if the exec path needs to be created.
+- name: Check if the exec path needs to be created
   ignore_errors: True
   raw: if [ ! -d {{ coreos_exec_path }} ]; then /bin/false; else /bin/true; fi
   register: exec_path_status
 
-- name: Create the exec path.
+- name: Create the exec path
   become: yes
-  when: exec_path_status | failed
+  when: exec_path_status is failed
   raw: mkdir -p {{ coreos_exec_path }}
 
-- name: Create required directories within the exec path.
+- name: Create required directories within the exec path
   become: yes
-  when: exec_path_status | failed
+  when: exec_path_status is failed
   raw: mkdir -p {{ coreos_exec_path }}/{{ item }}
   with_items:
+    - "bin"
     - "lib"
     - "tmp"
 
-- name: Change ownership of the exec path for the connected user.
+- name: Change ownership of the exec path for the connected user
   become: yes
-  when: exec_path_status | failed
+  when: exec_path_status is failed
   raw: chown -R {{ ansible_ssh_user }} {{ coreos_exec_path }}
 
-- name: Check if pypy needs to be installed.
+- name: Check if pypy needs to be installed
   ignore_errors: True
   raw: if [ ! -f {{ coreos_exec_path }}/bin/pypy ]; then /bin/false; else /bin/true; fi
   register: pypy_status
 
 - name: Download pypy.
-  when: pypy_status | failed
+  when: pypy_status is failed
   raw: cd {{ coreos_exec_path }}/tmp && wget -O - {{ coreos_pypy_url }} | tar -xjf -
 
-- name: Relocate the pypy files into the exec path.
+- name: Relocate the pypy files into the exec path
   become: yes
-  when: pypy_status | failed
+  when: pypy_status is failed
   raw: cp -Rp {{ coreos_exec_path }}/tmp/{{ coreos_pypy_file_name }}/* {{ coreos_exec_path }}/
 
-- name: Check if the ncurses library needs to be linked.
+- name: Check if the ncurses library needs to be linked
   ignore_errors: True
   raw: if [ ! -d {{ coreos_exec_path }}/lib/libtinfo.so.5 ]; then /bin/false; else /bin/true; fi
   register: ncurses_status
 
-- name: Symlink the ncurses library.
+- name: Symlink the ncurses library
   become: yes
-  when: ncurses_status | failed
+  when: ncurses_status is failed
   raw: ln -snf /lib64/libncurses.so.5.9 {{ coreos_exec_path }}/lib/libtinfo.so.5
 
-- name: Create the cloud init configuration file.
-  delegate_to: localhost
-  template: src="cloud-init.j2"
-            dest="{{ playbook_dir }}/cloud-config"
+- name: Create the python wrapper
+  script: create_python_wrapper.sh
 
-- name: Copy the cloud init configuration file onto the instance.
-  delegate_to: localhost
-  command: >
-    scp -i {{ ansible_ssh_private_key_file }} -P {{ ansible_ssh_port }}
-    {{ playbook_dir }}/cloud-config
-    {{ ansible_ssh_user }}@{{ ansible_ssh_host }}:{{ coreos_exec_path }}/tmp/cloud-config
+#- set_fact:
+#    python_template: "/tmp/python.{{ inventory_hostname }}"
+#
+#- name: Ensure the python binary template does not already exist
+#  delegate_to: localhost
+#  file:
+#    state: absent
+#    path: "{{ python_template }}"
+#
+#- name: Create the python binary template
+#  delegate_to: localhost
+#  template:
+#    src: "python.j2"
+#    dest: "{{ python_template }}"
+#
 
-- name: Execute the cloud init configuration.
-  become: yes
-  raw: coreos-cloudinit -from-file {{ coreos_exec_path }}/tmp/cloud-config
+
+#- name: Create python binary
+#  raw: |
+#    cat > "{{ coreos_exec_path }}/bin/python" <<EOF
+#    #!/usr/bin/env python
+#    export LD_LIBRARY_PATH="{{ coreos_exec_path }}/lib:$LD_LIBRARY_PATH"
+#    exec "{{ coreos_exec_path }}/bin/pypy" "\$@"
+#    EOF
+#
+#- name: Set executable bit on python binary
+#  raw: chmod 0755 "{{ coreos_exec_path }}/bin/python"
 
 - set_fact:
     ansible_python_interpreter: "{{ coreos_exec_path }}/bin/python"

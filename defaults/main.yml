@@ -1,8 +1,9 @@
 ---
-coreos_channel: "stable"
 coreos_exec_path: "/opt"
-coreos_cloudconfig_path: "{{ coreos_exec_path }}/cloudconfig"
-coreos_pypy_version: "5.3.1"
+coreos_pypy_version: "6.0.0"
 coreos_pypy_file_name: "pypy2-v{{ coreos_pypy_version }}-linux64"
-coreos_pypy_url: "https://bitbucket.org/pypy/pypy/downloads/{{ coreos_pypy_file_name }}.tar.bz2"
-coreos_etcd_discovery_url: ""
+coreos_pypy_url_file_name: "{{ coreos_pypy_file_name }}.tar.bz2"
+coreos_pypy_base_url: "https://bitbucket.org/pypy/pypy/downloads"
+coreos_pypy_url: "{{ coreos_pypy_base_url }}/{{ coreos_pypy_url_file_name }}"
+
+
