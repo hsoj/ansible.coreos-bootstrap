@@ -1,17 +1,6 @@
 ---
-- name: Check if the exec path needs to be created
-  ignore_errors: True
-  raw: if [ ! -d {{ coreos_exec_path }} ]; then /bin/false; else /bin/true; fi
-  register: exec_path_status
-
-- name: Create the exec path
-  become: yes
-  when: exec_path_status is failed
-  raw: mkdir -p "{{ coreos_exec_path }}"
-
 - name: Create required directories within the exec path
   become: yes
-  when: exec_path_status is failed or coreos_exec_path == "/opt"
   raw: mkdir -p "{{ coreos_exec_path }}/{{ item }}"
   with_items:
     - "bin"
@@ -20,8 +9,7 @@
 
 - name: Change ownership of the exec path for the connected user
   become: yes
-  when: exec_path_status is failed
-  raw: chown -R {{ ansible_ssh_user }} "{{ coreos_exec_path }}/*"
+  raw: chown -R {{ ansible_user }} "{{ coreos_exec_path }}/"
 
 - name: Check if pypy needs to be installed
   ignore_errors: True
